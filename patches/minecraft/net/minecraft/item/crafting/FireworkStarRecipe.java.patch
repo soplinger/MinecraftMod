@@ -1,0 +1,19 @@
+--- a/net/minecraft/item/crafting/FireworkStarRecipe.java
++++ b/net/minecraft/item/crafting/FireworkStarRecipe.java
+@@ -15,8 +15,6 @@
+ import net.minecraft.util.ResourceLocation;
+ import net.minecraft.util.Util;
+ import net.minecraft.world.World;
+-import net.minecraftforge.api.distmarker.Dist;
+-import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+ public class FireworkStarRecipe extends IRecipeHidden {
+    private static final Ingredient field_196212_a = Ingredient.func_199804_a(Items.field_151059_bz, Items.field_151008_G, Items.field_151074_bl, Items.field_196182_dv, Items.field_196183_dw, Items.field_196185_dy, Items.field_196184_dx, Items.field_196151_dA, Items.field_196186_dz);
+@@ -116,7 +114,6 @@
+       return itemstack;
+    }
+ 
+-   @OnlyIn(Dist.CLIENT)
+    public boolean func_194133_a(int p_194133_1_, int p_194133_2_) {
+       return p_194133_1_ * p_194133_2_ >= 2;
+    }

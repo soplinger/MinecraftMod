@@ -1,0 +1,183 @@
+--- a/net/minecraft/server/MinecraftServer.java
++++ b/net/minecraft/server/MinecraftServer.java
+@@ -335,20 +335,19 @@
+          worldserver.func_72912_H().func_76060_a(this.func_71265_f());
+       }
+ 
+-      WorldServerMulti worldservermulti = (new WorldServerMulti(this, p_212369_1_, DimensionType.NETHER, worldserver, this.field_71304_b)).func_212251_i__();
+-      this.field_71305_c.put(DimensionType.NETHER, worldservermulti);
+-      worldservermulti.func_72954_a(new ServerWorldEventHandler(this, worldservermulti));
+-      if (!this.func_71264_H()) {
+-         worldservermulti.func_72912_H().func_76060_a(this.func_71265_f());
++      for (DimensionType dim : DimensionType.func_212681_b()) {
++         WorldServer world = worldserver;
++         if (dim != DimensionType.OVERWORLD) {
++            world = (new WorldServerMulti(this, p_212369_1_, dim, worldserver, this.field_71304_b)).func_212251_i__();
++            this.field_71305_c.put(dim, world);
++            world.func_72954_a(new ServerWorldEventHandler(this, world));
++            if (!this.func_71264_H()) {
++               world.func_72912_H().func_76060_a(func_71265_f());
++            }
++         }
++         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.WorldEvent.Load(world));
+       }
+ 
+-      WorldServerMulti worldservermulti1 = (new WorldServerMulti(this, p_212369_1_, DimensionType.THE_END, worldserver, this.field_71304_b)).func_212251_i__();
+-      this.field_71305_c.put(DimensionType.THE_END, worldservermulti1);
+-      worldservermulti1.func_72954_a(new ServerWorldEventHandler(this, worldservermulti1));
+-      if (!this.func_71264_H()) {
+-         worldservermulti1.func_72912_H().func_76060_a(this.func_71265_f());
+-      }
+-
+       this.func_184103_al().func_212504_a(worldserver);
+       if (p_212369_3_.func_201357_P() != null) {
+          this.func_201300_aS().func_201381_a(p_212369_3_.func_201357_P());
+@@ -514,6 +513,7 @@
+ 
+       for(WorldServer worldserver1 : this.func_212370_w()) {
+          if (worldserver1 != null) {
++            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.WorldEvent.Unload(worldserver1));
+             worldserver1.close();
+          }
+       }
+@@ -547,6 +547,7 @@
+    public void run() {
+       try {
+          if (this.func_71197_b()) {
++            net.minecraftforge.fml.server.ServerLifecycleHooks.handleServerStarted(this);
+             this.field_211151_aa = Util.func_211177_b();
+             this.field_147147_p.func_151315_a(new TextComponentString(this.field_71286_C));
+             this.field_147147_p.func_151321_a(new ServerStatusResponse.Version("1.13.2", 404));
+@@ -570,7 +571,10 @@
+ 
+                this.field_71296_Q = true;
+             }
++            net.minecraftforge.fml.server.ServerLifecycleHooks.handleServerStopping(this);
++            net.minecraftforge.fml.server.ServerLifecycleHooks.expectServerStopped(); // has to come before finalTick to avoid race conditions
+          } else {
++            net.minecraftforge.fml.server.ServerLifecycleHooks.expectServerStopped(); // has to come before finalTick to avoid race conditions
+             this.func_71228_a((CrashReport)null);
+          }
+       } catch (Throwable throwable1) {
+@@ -589,6 +593,7 @@
+             field_147145_h.error("We were unable to save this crash report to disk.");
+          }
+ 
++         net.minecraftforge.fml.server.ServerLifecycleHooks.expectServerStopped(); // has to come before finalTick to avoid race conditions
+          this.func_71228_a(crashreport);
+       } finally {
+          try {
+@@ -597,6 +602,7 @@
+          } catch (Throwable throwable) {
+             field_147145_h.error("Exception stopping the server", throwable);
+          } finally {
++            net.minecraftforge.fml.server.ServerLifecycleHooks.handleServerStopped(this);
+             this.func_71240_o();
+          }
+ 
+@@ -652,6 +658,7 @@
+ 
+    public void func_71217_p(BooleanSupplier p_71217_1_) {
+       long i = Util.func_211178_c();
++      net.minecraftforge.fml.hooks.BasicEventHooks.onPreServerTick();
+       ++this.field_71315_w;
+       if (this.field_71295_T) {
+          this.field_71295_T = false;
+@@ -672,6 +679,7 @@
+ 
+          Collections.shuffle(Arrays.asList(agameprofile));
+          this.field_147147_p.func_151318_b().func_151330_a(agameprofile);
++         this.field_147147_p.invalidateJson();
+       }
+ 
+       if (this.field_71315_w % 900 == 0) {
+@@ -696,6 +704,7 @@
+       this.field_211152_ao = this.field_211152_ao * 0.8F + (float)l / 1000000.0F * 0.19999999F;
+       this.field_71304_b.func_76319_b();
+       this.field_71304_b.func_76319_b();
++      net.minecraftforge.fml.hooks.BasicEventHooks.onPostServerTick();
+    }
+ 
+    public void func_71190_q(BooleanSupplier p_71190_1_) {
+@@ -723,6 +732,7 @@
+             }
+ 
+             this.field_71304_b.func_76320_a("tick");
++            net.minecraftforge.fml.hooks.BasicEventHooks.onPreWorldTick(worldserver);
+ 
+             try {
+                worldserver.func_72835_b(p_71190_1_);
+@@ -740,6 +750,7 @@
+                throw new ReportedException(crashreport1);
+             }
+ 
++            net.minecraftforge.fml.hooks.BasicEventHooks.onPostWorldTick(worldserver);
+             this.field_71304_b.func_76319_b();
+             this.field_71304_b.func_76320_a("tracker");
+             worldserver.func_73039_n().func_72788_a();
+@@ -752,6 +763,8 @@
+          }))[this.field_71315_w % 100] = Util.func_211178_c() - i;
+       }
+ 
++      this.field_71304_b.func_76318_c("dim_unloading");
++      net.minecraftforge.common.DimensionManager.unloadWorlds(this, this.field_71315_w % 200 == 0);
+       this.field_71304_b.func_76318_c("connection");
+       this.func_147137_ag().func_151269_c();
+       this.field_71304_b.func_76318_c("players");
+@@ -774,6 +787,14 @@
+    }
+ 
+    public static void main(String[] p_main_0_) {
++      //Forge: Copied from DedicatedServer.init as to run as early as possible, Old code left in place intentionally.
++      //Done in good faith with permission: https://github.com/MinecraftForge/MinecraftForge/issues/3659#issuecomment-390467028
++      ServerEula eula = new ServerEula(new File("eula.txt"));
++      if (!eula.func_154346_a()) {
++          field_147145_h.info("You need to agree to the EULA in order to run the server. Go to eula.txt for more info.");
++          eula.func_154348_b();
++          return;
++      }
+       Bootstrap.func_151354_b();
+ 
+       try {
+@@ -876,7 +897,7 @@
+    }
+ 
+    public void func_71256_s() {
+-      this.field_175590_aa = new Thread(this, "Server thread");
++      this.field_175590_aa = new Thread(net.minecraftforge.fml.common.thread.SidedThreadGroups.SERVER, this, "Server thread");
+       this.field_175590_aa.setUncaughtExceptionHandler((p_195574_0_, p_195574_1_) -> {
+          field_147145_h.error(p_195574_1_);
+       });
+@@ -896,7 +917,7 @@
+    }
+ 
+    public WorldServer func_71218_a(DimensionType p_71218_1_) {
+-      return this.field_71305_c.get(p_71218_1_);
++      return net.minecraftforge.common.DimensionManager.getWorld(this, p_71218_1_, true, true);
+    }
+ 
+    public Iterable<WorldServer> func_212370_w() {
+@@ -935,7 +956,7 @@
+    }
+ 
+    public String getServerModName() {
+-      return "vanilla";
++      return net.minecraftforge.fml.BrandingControl.getServerBranding();
+    }
+ 
+    public CrashReport func_71230_b(CrashReport p_71230_1_) {
+@@ -1472,4 +1493,14 @@
+          return 0;
+       }
+    }
++
++   @Nullable
++   public long[] getTickTime(DimensionType dim) {
++      return field_71312_k.get(dim);
++   }
++
++   @Deprecated //Forge Internal use Only, You can screw up a lot of things if you mess with this map.
++   public synchronized Map<DimensionType, WorldServer> forgeGetWorldMap() {
++      return this.field_71305_c;
++   }
+ }

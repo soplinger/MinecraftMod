@@ -1,0 +1,13 @@
+--- a/net/minecraft/world/storage/loot/LootContext.java
++++ b/net/minecraft/world/storage/loot/LootContext.java
+@@ -91,6 +91,10 @@
+       }
+    }
+ 
++   public int getLootingModifier() {
++      return net.minecraftforge.common.ForgeHooks.getLootingLevel(func_186493_a(), func_186492_c(), field_186503_f);
++   }
++
+    public static class Builder {
+       private final WorldServer field_186474_a;
+       private float field_186475_b;
